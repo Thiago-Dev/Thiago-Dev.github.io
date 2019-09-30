@@ -7,8 +7,8 @@
   <title>Hypnomena.DUI</title>
   <meta name="description" content="hypnonema is a fivem cinema script resource">
   <meta name="author" content="">
-
-  <link href="//vjs.zencdn.net/7.6.0/video-js.css" rel="stylesheet">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/mediaelement/4.2.12/mediaelementplayer.min.css" integrity="sha256-ji1bfJaTGnyscoc7LzcV9yNJy5vGKJ0frO3KJo1oaGQ=" crossorigin="anonymous" />
+  <!--<link href="//vjs.zencdn.net/7.6.0/video-js.css" rel="stylesheet">-->
     <style type="text/css">
         html, body, div {
             height: 100%;
@@ -33,8 +33,8 @@
 <body>
 
 
-        <video id='my-video' class='video-js vjs-fluid' preload='none'
-        poster='https://i.imgur.com/dPaIjEW.jpg' data-setup='{"techOrder": ["html5", "youtube" ]}'>
+        <video id='my-video' class='mejs__player' preload='none' width='100%' height='100%'
+        poster='https://i.imgur.com/dPaIjEW.jpg'>
           <source src='MY_VIDEO.mp4' type='video/mp4'>
           <source src='MY_VIDEO.webm' type='video/webm'>
           <p class='vjs-no-js'>
@@ -42,9 +42,18 @@
             <a href='https://videojs.com/html5-video-support/' target='_blank'>supports HTML5 video</a>
           </p>
         </video>
-    
+  
+        <!-- Player includes -->
+        <script src="//cdnjs.cloudflare.com/ajax/libs/mediaelement/4.2.12/mediaelement-and-player.min.js" integrity="sha256-z7JbZVaNbNzLvOCFHUNrjqnZRojZbRAxgr4KU2qL0qc=" crossorigin="anonymous"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/mediaelement/4.2.12/renderers/dailymotion.min.js" integrity="sha256-CKrsh5uD7HLCSn4/PcZuSDs7d3MrvZ6nGqidwyK3oMk=" crossorigin="anonymous"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/mediaelement/4.2.12/renderers/facebook.min.js" integrity="sha256-xFjU+e7BzCqDdOkjs/yVU3Nw6WYiWFcj8oHIfX1arEA=" crossorigin="anonymous"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/mediaelement/4.2.12/renderers/soundcloud.min.js" integrity="sha256-sGpYkPdJd2l7mdbqGqdm3v98V/tMtixHZ4BHjA8FMBQ=" crossorigin="anonymous"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/mediaelement/4.2.12/renderers/twitch.min.js" integrity="sha256-LbUp3oTMmal3EuD0oIm5WkcTTx68t9K9k9kOIwPZGsY=" crossorigin="anonymous"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/mediaelement/4.2.12/renderers/vimeo.min.js" integrity="sha256-/mDIPKyxQNNKJmBD685EjPbepZszfrWdq7rS6rbZvgY=" crossorigin="anonymous"></script>
+        
+        <!--
         <script src="//cdnjs.cloudflare.com/ajax/libs/video.js/7.6.0/video.js" integrity="sha256-7lzgCgLtTkrv/wfhKOA51KlXkKCZfysuQHF5Vh711Ew=" crossorigin="anonymous"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/videojs-youtube/2.6.0/Youtube.min.js" integrity="sha256-YJbYbf82My5W9mjSfNyUOnnhafQPNI/3b0wt3rFL/es=" crossorigin="anonymous"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/videojs-youtube/2.6.0/Youtube.min.js" integrity="sha256-YJbYbf82My5W9mjSfNyUOnnhafQPNI/3b0wt3rFL/es=" crossorigin="anonymous"></script>-->
         <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
   
         <script>
@@ -56,7 +65,36 @@
              * DONT CHANGE variable below!
              */
             var replay = false;
+            var player = new MediaElementPlayer('my-video', {
+                // When using `MediaElementPlayer`, an `instance` argument
+	            // is available in the `success` callback
+		        success: function(mediaElement, originalNode, instance) {
+                    // do things
+                    instance.showPosterWhenEnded = true;
+                    instance.showPosterWhenPaused = true;
+                    instance.hideVideoControlsOnLoad = true;
+                    instance.hideVideoControlsOnPause = true;
 
+                    setInterval(function() {
+                        if(!instance.paused) {
+                            fetch('https://hypnonema/Hypnonema.StateTick', {
+                                headers: {'content-type': 'application/json; charset=UTF-8'},
+                            body: JSON.stringify({
+                                paused: instance.paused,
+                                currentTime: instance.currentTime,
+                                duration: instance.duration,
+                                remainingTime: instance.duration - instance.currentTime,
+                                currentSource: instance.getSrc(),
+                                currentType: instance.getSrc().type,
+                            }),
+                            method: 'POST'
+                        }).catch(error => console.log(error));
+                        }
+                    }, interval);
+
+                    }
+                });
+            /*
             var player = videojs('my-video');
             player.ready(function() {
                 player.poster(splash_image);
@@ -84,45 +122,56 @@
                 if(replay) {
                     player.play();
                 }
-            });
+            });*/
             $(window).on('message', function ($event) {
                 if(event.data.type === 'play') {
                     if(event.data.src.type === 'auto') {
-                        player.src({src: event.data.src.url});
+                        player.src = {src: event.data.src.url};
                     } else {
-                        player.src({type: event.data.src.type, src: event.data.src.url});
+                        player.src = {type: event.data.src.type, src: event.data.src.url};
                     }
+                    player.load();
                     player.play();
                 }
 
                 if(event.data.type === 'update') {
                     player.src({type: event.data.src.type, src: event.data.src.url})
-                    player.currentTime(event.data.currentTime);
+                    player.load();
+                    player.setCurrentTime(event.data.currentTime);
                     player.play();
                 }
 
                 if(event.data.type === 'pause') {
-                    player.poster(pause_image);
+                    player.setPoster(pause_image);
                     player.pause();
                 }
 
                 if(event.data.type === 'stop') {
                     player.pause();
-                    player.poster(splash_image);
-                    player.currentTime(0);
+                    player.setPoster(splash_image);
+                    player.setCurrentTime(0);
                 }
 
                 if(event.data.type === 'resume') {
-                    player.poster(splash_image);
+                    player.setPoster(splash_image);
                     player.play();
                 }
 
                 if(event.data.type === 'volume') {
-                    player.volume(event.data.volume);
+                    player.setVolume(event.data.volume);
                 }
 
                 if(event.data.type === 'toggleReplay') {
                     replay = event.data.value;
+                }
+
+                /*
+                    For twitch.tv videos with mature content 
+                 */
+                if(event.data.type === 'confirm') {
+                    $('#mature-link').click(function() {
+                        console.log('confirmed play..')
+                    });
                 }
             });
         </script>
